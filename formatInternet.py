@@ -1,21 +1,20 @@
 from datetime import datetime
 from datetime import timedelta
+from datetime import timezone
 import sys
 import visualGraph
 from tqdm import tqdm
 
-f = open (str (sys.argv[1]), 'r').read()
-ff = f.split ('\n')
+f = open (str (sys.argv[1]), 'r').read().strip()
+ff = f.split ('\n')[1:]
 all = []
 for pos in tqdm(range (len (ff))):
     i = ff[pos]
-    i = i.split ()
-    if (len (i) < 3):
+    if (i == 'START'):
         break
-    if (i[2] == 'Dec'):
-        i[2] = 'Dez'
-    st = i[1] + ' ' + i[2] + ' ' + i[5] + ' ' + i[3] + ' ' + i[4]
-    dt = datetime.strptime (st, '%d %b %Y %H:%M:%S %Z')
+    i = i.split ()
+    tz = timezone(timedelta(hours=(int(i[1][1:]))) - timedelta(hours=3)) # TODO: Fix timezone problem in all project!!
+    dt = datetime.fromtimestamp(int(i[0]))
     tp = (dt, i[-1] == 'ok')
     all.append (tp)
 
@@ -78,29 +77,30 @@ for tp in allPerSec:
 
 if (startFail != -1):
     allFails.append ((startFail, tp[0] - timedelta(0, 1)))
-print ("")
-print ("\nIntervalos sem internet:")
+# print ("")
+# print ("\Intervals without internet:")
 timeWithout = timedelta(0)
 for fls in allFails:
-    print (fls[0], fls[1], fls[1] - fls[0])
-    timeWithout += fls[1] - fls[0]
+#    print (fls[0], fls[1], fls[1] - fls[0])
+   timeWithout += fls[1] - fls[0]
 
-print ("\n\nIntervalos sem internet acima de 15 segundos:")
+thr = 15
+print ("\Intervals without internet above", thr, "seconds:")
 for fls in allFails:
-    if (fls[1] - fls[0] + timedelta(0, 1) > timedelta (0, 15)):
+    if (fls[1] - fls[0] + timedelta(0, 1) > timedelta (0, thr)):
         print (fls[0], fls[1], fls[1] - fls[0] + timedelta(0, 1))
 
 print ("")
-print ("Desde", startDt)
-print ("Até", all[-1][0])
-print ("Período", all[-1][0]-startDt)
-print ("Tempo sem internet:", timeWithout)
-print ("Percentual de tempo sem internet: {0:.1f} %".format((fail/(ok+fail))*100, '%'))
+print ("From", startDt)
+print ("To", all[-1][0])
+print ("Duration of tests:", all[-1][0]-startDt)
+print ("Duration without internet:", timeWithout)
+print ("Percentage of time without internet: {0:.1f} %".format((fail/(ok+fail))*100, '%'))
 
 for i in range (8):
     vals.pop()
 valsCompressed = []
-qnt = len(vals)//4000
+qnt = len(vals)//20000
 for i in range (0, len (vals), qnt):
     if (i+qnt-1 >= len (vals)):
         break
@@ -108,7 +108,7 @@ for i in range (0, len (vals), qnt):
     for j in range (i, i+qnt):
         sum += vals[j]
     valsCompressed.append (sum >= qnt//2)
-print ("qnt =", qnt)
+print ("Seconds per line of pixel in internet_all =", qnt)
 visualGraph.generateRow (valsCompressed, "files/internet_all")
 
 '''
